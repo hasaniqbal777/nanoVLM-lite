@@ -21,16 +21,45 @@ from data.processors import get_tokenizer, get_image_processor, get_image_string
 
 
 class FLOPCounter:
-    def __init__(self, model_path: str = "lusxvr/nanoVLM", device: str = "auto"):
-        """Initialize FLOP counter with nanoVLM model."""
+    def __init__(self, model_path: str = "lusxvr/nanoVLM", device: str = "auto", checkpoint_path: str = None):
+        """Initialize FLOP counter with nanoVLM model.
+        
+        Args:
+            model_path: Path to model or HuggingFace model ID (ignored if checkpoint_path provided)
+            device: Device to use (auto, cuda, mps, cpu)
+            checkpoint_path: Path to checkpoint saved by baseline.py (optional)
+        """
         self.device = self._get_device(device)
         print(f"Using device: {self.device}")
         
-        print(f"Loading model from {model_path}...")
-        self.model = VisionLanguageModel.from_pretrained(model_path).to(self.device)
-        self.model.eval()
-        
-        self.cfg = self.model.cfg
+        if checkpoint_path:
+            print(f"Loading model from checkpoint: {checkpoint_path}...")
+            # Use weights_only=False since checkpoint contains custom config objects
+            checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+            
+            # Load model with config from checkpoint
+            self.model = VisionLanguageModel.from_pretrained(model_path).to(self.device)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.model.eval()
+            
+            # Use config from checkpoint (important for resolution changes)
+            if 'model_config' in checkpoint:
+                self.cfg = checkpoint['model_config']
+                self.model.cfg = self.cfg
+                print(f"Loaded config from checkpoint (resolution: {self.cfg.vit_img_size})")
+            else:
+                self.cfg = self.model.cfg
+            
+            # Store checkpoint results if available
+            self.checkpoint_results = checkpoint.get('results', None)
+            if self.checkpoint_results:
+                print(f"Checkpoint contains evaluation results")
+        else:
+            print(f"Loading model from {model_path}...")
+            self.model = VisionLanguageModel.from_pretrained(model_path).to(self.device)
+            self.model.eval()
+            self.cfg = self.model.cfg
+            self.checkpoint_results = None
         
         # Get processors
         self.tokenizer = get_tokenizer(
@@ -284,6 +313,8 @@ def main():
     parser = argparse.ArgumentParser(description="FLOP counter for nanoVLM")
     parser.add_argument("--model-path", type=str, default="lusxvr/nanoVLM",
                         help="Path to model or HuggingFace model ID")
+    parser.add_argument("--checkpoint", type=str, default=None,
+                        help="Path to checkpoint saved by baseline.py (optional)")
     parser.add_argument("--image", type=str, default="test/test_image.webp",
                         help="Path to test image")
     parser.add_argument("--question", type=str, default="What is the name of the dog's toy?",
@@ -300,7 +331,7 @@ def main():
     args = parser.parse_args()
     
     # Create counter
-    counter = FLOPCounter(args.model_path, args.device)
+    counter = FLOPCounter(args.model_path, args.device, checkpoint_path=args.checkpoint)
     
     # 1. Manual ViT FLOPs
     print("\n" + "="*60)
@@ -352,6 +383,7 @@ def main():
         
         results = {
             "model_path": args.model_path,
+            "checkpoint": args.checkpoint,
             "image": args.image,
             "question": args.question,
             "device": str(counter.device),
@@ -368,6 +400,10 @@ def main():
                 "warmup_overhead_seconds": gen_no_warmup['latency_seconds'] - gen_with_warmup['latency_seconds']
             }
         }
+        
+        # Include checkpoint results if available
+        if counter.checkpoint_results:
+            results["checkpoint_evaluation_results"] = counter.checkpoint_results
         
         with open(output_path, 'w') as f:
             json.dump(results, f, indent=2)

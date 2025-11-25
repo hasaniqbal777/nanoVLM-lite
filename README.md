@@ -21,35 +21,41 @@ uv sync
 Run baseline evaluation to measure accuracy and performance:
 
 ```bash
-# Quick test on 10 samples
-./scripts/2-baseline.sh 10
+# Default: 100 samples, both modes, 512 resolution
+./scripts/2-baseline.sh
 
-# Full evaluation on 100 samples (both MCQ and OA)
-./scripts/2-baseline.sh 100 both
+# With specific sample count
+./scripts/2-baseline.sh --max-samples 50
 
 # MCQ only evaluation
-./scripts/2-baseline.sh 100 mcq
+./scripts/2-baseline.sh --max-samples 100 --mode mcq
 
 # Open-answer only evaluation
-./scripts/2-baseline.sh 100 oa
+./scripts/2-baseline.sh --max-samples 100 --mode oa
+
+# With resolution reduction (384x384)
+./scripts/2-baseline.sh --resolution 384
+
+# Combined: 100 samples, 256 resolution
+./scripts/2-baseline.sh --max-samples 100 --resolution 256
 
 # With custom output file
-./scripts/2-baseline.sh 1 both --output results/baseline_1.json
+./scripts/2-baseline.sh --max-samples 10 --output results/custom.json
 
 # With test split
-./scripts/2-baseline.sh 100 both --split test
-
-# Full validation set (no max samples specified)
-./scripts/2-baseline.sh --output results/baseline_full.json
-
-# Or explicitly use 0 for all samples
-./scripts/2-baseline.sh 0 both --output results/baseline_full.json
+./scripts/2-baseline.sh --split test
 
 # Or use Python directly
-uv run python src/evaluation/baseline.py --max-samples 100 --mode both
+uv run python src/evaluation/baseline.py \
+    --max-samples 100 \
+    --mode both \
+    --resolution 384 \
+    --output results/baseline_results_res384.json
 ```
 
-**Results** (100 samples):
+**Output**: Results saved to `results/baseline_results_res{RESOLUTION}.json` (includes checkpoint for FLOP measurement)
+
+**Results** (100 samples, 512×512 resolution):
 - Model: `lusxvr/nanoVLM` (460M parameters)
 - Accuracy: TBD%
 - Latency: ~950ms/sample
@@ -68,6 +74,13 @@ Measure FLOPs for vision encoder and generation:
 
 # With custom output path
 ./scripts/3-flop-counter.sh test/test_image.webp test/test_query.txt results/my_flops.json
+
+# Using checkpoint from baseline evaluation
+uv run python src/evaluation/flop_counter.py \
+    --checkpoint checkpoints/baseline_res384_for_flops.pt \
+    --image test/test_image.webp \
+    --question "What is the name of the dog's toy?" \
+    --output results/flops_res384.json
 ```
 
 **FLOP Counter Deliverables**:
@@ -81,21 +94,26 @@ Measure FLOPs for vision encoder and generation:
 ```
 .
 ├── scripts/
-│   ├── common.sh           # Shared shell functions
-│   ├── 1-setup.sh          # Clone nanoVLM repository
-│   ├── 2-baseline.sh       # Run baseline evaluation
-│   └── 3-flop-counter.sh   # Measure FLOPs
+│   ├── common.sh                # Shared shell functions
+│   ├── 1-setup.sh               # Clone nanoVLM repository
+│   ├── 2-baseline.sh            # Run baseline evaluation
+│   ├── 3-flop-counter.sh        # Measure FLOPs
+│   └── 4-evaluate.sh            # Complete evaluation pipeline
 ├── src/
-│   └── evaluation/
-│       ├── baseline.py     # Baseline evaluation script
-│       └── flop_counter.py # FLOP measurement script
+│   ├── evaluation/
+│   │   ├── base_evaluator.py   # Base evaluator with FLOP profiling
+│   │   ├── baseline.py          # Baseline evaluation script
+│   │   └── flop_counter.py      # FLOP measurement script
+│   └── optimization/
+│       └── resolution_reduction.py  # Resolution reduction strategy
 ├── models/
-│   └── nanoVLM/            # Cloned nanoVLM repository
+│   └── nanoVLM/                 # Cloned nanoVLM repository
 ├── test/
-│   ├── test_image.webp     # Test image
-│   └── test_query.txt      # Test query
-├── results/                # Evaluation results
-└── pyproject.toml          # Dependencies (uv)
+│   ├── test_image.webp          # Test image
+│   └── test_query.txt           # Test query
+├── checkpoints/                 # Model checkpoints for FLOP calculation
+├── results/                     # Evaluation results
+└── pyproject.toml               # Dependencies (uv)
 ```
 
 ## Resources
@@ -104,9 +122,41 @@ Measure FLOPs for vision encoder and generation:
 - **Repository**: https://github.com/huggingface/nanoVLM
 - **Dataset**: https://huggingface.co/datasets/HuggingFaceM4/A-OKVQA
 
+## Optimization Strategies
+
+### 1. Resolution Reduction ✅
+- **Status**: Implemented
+- **Method**: Reduce input image resolution (512→384→256→192)
+- **FLOP Reduction**: Quadratic with resolution (e.g., 384→512 = 44%)
+- **Implementation**: Automatic positional embedding interpolation
+- **Use**: `./scripts/2-baseline.sh --resolution 384`
+
+### 2. Token Pooling/Dropping ✅
+- **Status**: Implemented
+- **Method**: Reduce number of image tokens processed by language model
+- **Strategies**:
+  - **Average Pooling**: Combine adjacent tokens (2x2 → 1, 4x reduction)
+  - **Max Pooling**: Take maximum activation from patch
+  - **Token Dropping**: Drop least informative tokens based on L2 norm
+- **FLOP Reduction**: Linear with token reduction (50% tokens = ~50% LM FLOPs)
+- **Use**: 
+  ```bash
+  # 2x2 pooling (4x token reduction)
+  python src/optimization/token_pooling.py --pool-factor 2 --pool-method avg
+  
+  # Keep 50% of tokens (drop 50%)
+  python src/optimization/token_pooling.py --keep-ratio 0.5 --drop-method norm
+  ```
+
+### 3. Other Strategies (Future)
+- Quantization (INT8, INT4)
+- Pruning (structured/unstructured)
+- Knowledge distillation
+- Layer reduction
+
 ## Next Steps
 
-After baseline evaluation:
-1. Implement optimization strategies (quantization, pruning, etc.)
-2. Evaluate optimized models
-3. Select best model meeting 65% accuracy threshold
+1. Run baseline evaluation at multiple resolutions
+2. Measure FLOP reduction vs accuracy trade-off
+3. Select optimal resolution meeting ≥65% accuracy threshold
+4. Implement additional optimization strategies if needed
