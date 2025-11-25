@@ -1,0 +1,16 @@
+[project]
+name = "nanovlm-optimization"
+version = "0.1.0"
+description = "Reduce nanoVLM inference TFLOPs while maintaining accuracy on A-OKVQA"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "datasets>=4.4.1",
+    "einops>=0.8.1",
+    "fvcore>=0.1.5.post20221221",
+    "pillow>=12.0.0",
+    "torch>=2.9.1",
+    "torchvision>=0.24.1",
+    "tqdm>=4.67.1",
+    "transformers>=4.57.3",
+]
