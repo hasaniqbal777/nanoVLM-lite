@@ -221,7 +221,7 @@ class BaselineEvaluator:
                     
                     # Create open-ended prompt (no choices shown)
                     question = example["question"]
-                    prompt = f"{question}\nProvide a short answer."
+                    prompt = f"Question: {question}\n\nAnswer briefly:"
                     
                     # Create input with image string
                     image_string = get_image_string(
@@ -251,7 +251,16 @@ class BaselineEvaluator:
                     predicted_answer = output.strip().lower()
                     
                     # Get correct answer(s) - A-OKVQA has multiple valid answers
-                    correct_answers = [ans.lower() for ans in example["direct_answers"]]
+                    # Parse direct_answers if it's a string representation of a list
+                    direct_answers = example["direct_answers"]
+                    if isinstance(direct_answers, str):
+                        import ast
+                        try:
+                            direct_answers = ast.literal_eval(direct_answers)
+                        except:
+                            direct_answers = [direct_answers]
+                    
+                    correct_answers = [ans.strip().lower() for ans in direct_answers]
                     correct_choice = example["choices"][example["correct_choice_idx"]].lower()
                     
                     # Check if prediction matches any correct answer or the correct choice
@@ -385,14 +394,12 @@ def main():
         print("MCQ Evaluation:")
         print(f"  Accuracy: {results['mcq_accuracy']*100:.2f}% ({results['mcq_correct']}/{results['mcq_total']})")
         print(f"  Avg Latency: {results['mcq_avg_latency']*1000:.2f} ms/sample")
-        print(f"  65% Threshold: {results['mcq_accuracy']*100*0.65:.2f}%")
     
     if mode in ["open-answer", "both"]:
         print()
         print("Open-Answer Evaluation:")
         print(f"  Accuracy: {results['oa_accuracy']*100:.2f}% ({results['oa_correct']}/{results['oa_total']})")
         print(f"  Avg Latency: {results['oa_avg_latency']*1000:.2f} ms/sample")
-        print(f"  65% Threshold: {results['oa_accuracy']*100*0.65:.2f}%")
     
     print("="*60)
 

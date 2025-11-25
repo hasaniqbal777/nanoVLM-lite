@@ -1,0 +1,16 @@
+{
+  "total_params": 460113984,
+  "trainable_params": 460113984,
+  "estimated_tflops_per_forward": 0.0920227968,
+  "mcq_accuracy": 0.7528384279475983,
+  "mcq_correct": 862,
+  "mcq_total": 1145,
+  "mcq_avg_latency": 0.9181111317014069,
+  "oa_accuracy": 0.662882096069869,
+  "oa_correct": 759,
+  "oa_total": 1145,
+  "oa_avg_latency": 1.0371509951795552,
+  "model_path": "lusxvr/nanoVLM",
+  "split": "validation",
+  "mode": "both"
+}

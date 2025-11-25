@@ -24,11 +24,29 @@ Run baseline evaluation to measure accuracy and performance:
 # Quick test on 10 samples
 ./scripts/2-baseline.sh 10
 
-# Full evaluation on 100 samples
-./scripts/2-baseline.sh 100
+# Full evaluation on 100 samples (both MCQ and OA)
+./scripts/2-baseline.sh 100 both
+
+# MCQ only evaluation
+./scripts/2-baseline.sh 100 mcq
+
+# Open-answer only evaluation
+./scripts/2-baseline.sh 100 oa
+
+# With custom output file
+./scripts/2-baseline.sh 1 both --output results/baseline_1.json
+
+# With test split
+./scripts/2-baseline.sh 100 both --split test
+
+# Full validation set (no max samples specified)
+./scripts/2-baseline.sh --output results/baseline_full.json
+
+# Or explicitly use 0 for all samples
+./scripts/2-baseline.sh 0 both --output results/baseline_full.json
 
 # Or use Python directly
-uv run python src/evaluation/baseline.py --max-samples 100
+uv run python src/evaluation/baseline.py --max-samples 100 --mode both
 ```
 
 **Results** (100 samples):

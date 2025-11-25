@@ -1,0 +1,65 @@
+{
+  "model_path": "lusxvr/nanoVLM",
+  "image": "test/test_image.webp",
+  "question": "What is the name of the dog's toy?",
+  "device": "mps",
+  "manual_vit_flops": {
+    "N_img": 12,
+    "T_patches": 1024,
+    "D_hidden": 768,
+    "H_heads": 12,
+    "d_per_head": 64,
+    "I_intermediate": 3072,
+    "L_layers": 12,
+    "patch_conv_flops": 1207959552,
+    "proj_qkv_flops": 3623878656,
+    "proj_out_flops": 1207959552,
+    "attn_flops": 3221225472,
+    "mlp_flops": 9663676416,
+    "per_layer_flops": 17716740096,
+    "vit_per_image_flops": 213808840704,
+    "vit_total_flops": 2565706088448,
+    "vit_total_gflops": 2565.706088448,
+    "vit_total_tflops": 2.565706088448,
+    "n_h": 3,
+    "n_w": 4
+  },
+  "automatic_vit_flops": {
+    "n_h": 3,
+    "n_w": 4,
+    "N_img": 12,
+    "vit_total_flops": 2277003755520,
+    "vit_total_gflops": 2277.00375552,
+    "vit_total_tflops": 2.27700375552
+  },
+  "generation_no_warmup": {
+    "S_prefill_tokens": 864,
+    "n_tokens": 3,
+    "warmup_steps": 0,
+    "generation_total_flops": 2934528998400,
+    "generation_total_gflops": 2934.5289984,
+    "generation_total_tflops": 2.9345289984,
+    "generation_flops_per_token": 978176332800.0,
+    "latency_seconds": 0.8888959884643555,
+    "latency_per_token_ms": 296.29866282145184
+  },
+  "generation_with_warmup": {
+    "S_prefill_tokens": 864,
+    "n_tokens": 3,
+    "warmup_steps": 5,
+    "generation_total_flops": 2934528998400,
+    "generation_total_gflops": 2934.5289984,
+    "generation_total_tflops": 2.9345289984,
+    "generation_flops_per_token": 978176332800.0,
+    "latency_seconds": 0.8134059906005859,
+    "latency_per_token_ms": 271.1353302001953
+  },
+  "summary": {
+    "manual_vit_tflops": 2.565706088448,
+    "automatic_vit_tflops": 2.27700375552,
+    "vit_difference_tflops": 0.28870233292800007,
+    "generation_no_warmup_tflops": 2.9345289984,
+    "generation_with_warmup_tflops": 2.9345289984,
+    "warmup_overhead_seconds": 0.07548999786376953
+  }
+}
