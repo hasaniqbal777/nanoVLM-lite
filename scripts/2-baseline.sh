@@ -14,6 +14,7 @@ show_usage() {
     c_echo $YELLOW "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
+    echo "  --model PATH         Model path or HF ID (default: lusxvr/nanoVLM)"
     echo "  --max-samples NUM    Number of samples to evaluate (default: 100, 0 = all)"
     echo "  --mode MODE          Evaluation mode: mcq, oa, both (default: both)"
     echo "  --split SPLIT        Dataset split: train, validation, test (default: validation)"
@@ -25,6 +26,7 @@ show_usage() {
     echo "  $0                                           # Default: 100 samples, both modes, 512 resolution"
     echo "  $0 --max-samples 50                          # 50 samples"
     echo "  $0 --max-samples 100 --mode mcq              # 100 samples, MCQ only"
+    echo "  $0 --model checkpoints/mcq_finetuning/mcq_finetuned  # Evaluate finetuned model"
     echo "  $0 --resolution 384                          # 384x384 resolution"
     echo "  $0 --max-samples 100 --resolution 256        # 100 samples, 256 resolution"
     echo "  $0 --output results/custom.json              # Custom output file"
@@ -54,6 +56,7 @@ ensure_dir "$RESULTS_DIR"
 export PYTHONPATH="$NANOVLM_DIR:$PROJECT_ROOT:$PYTHONPATH"
 
 # Default values
+MODEL="lusxvr/nanoVLM"
 MAX_SAMPLES=100
 MODE="both"
 SPLIT="validation"
@@ -64,6 +67,10 @@ OUTPUT_OVERRIDE=false
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --model)
+            MODEL="$2"
+            shift 2
+            ;;
         --max-samples)
             MAX_SAMPLES="$2"
             shift 2
@@ -102,8 +109,18 @@ if [ "$OUTPUT_OVERRIDE" = false ]; then
     fi
 fi
 
+# Setup logging based on output filename
+LOG_DIR="$PROJECT_ROOT/logs"
+ensure_dir "$LOG_DIR"
+OUTPUT_BASENAME=$(basename "$OUTPUT" .json)
+LOG_FILE="$LOG_DIR/${OUTPUT_BASENAME}.log"
+
+# Function to log both to console and file
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 echo ""
 c_echo $YELLOW "Configuration:"
+echo "  Model: $MODEL"
 echo "  Max samples: $MAX_SAMPLES"
 echo "  Mode: $MODE"
 echo "  Split: $SPLIT"
@@ -121,6 +138,7 @@ echo ""
 
 # Build command with optional resolution
 EVAL_CMD="uv run python src/evaluation/baseline.py \
+    --model-path '$MODEL' \
     --max-samples $MAX_SAMPLES \
     --mode $MODE \
     --split $SPLIT \
@@ -135,3 +153,4 @@ eval $EVAL_CMD
 echo ""
 c_echo $GREEN "✓ Baseline evaluation complete!"
 c_echo $YELLOW "Results saved to: $OUTPUT"
+c_echo $YELLOW "Log saved to: $LOG_FILE"

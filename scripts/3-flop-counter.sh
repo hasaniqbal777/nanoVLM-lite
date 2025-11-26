@@ -9,6 +9,14 @@ source "$SCRIPT_DIR/common.sh"
 
 set -e
 
+# Setup logging
+LOG_DIR="$PROJECT_ROOT/logs"
+ensure_dir "$LOG_DIR"
+LOG_FILE="$LOG_DIR/flop_counter_$(date +%Y%m%d_%H%M%S).log"
+
+# Function to log both to console and file
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 # Show usage
 show_usage() {
     c_echo $YELLOW "Usage: $0 [IMAGE] [QUERY_FILE] [OUTPUT]"
@@ -82,3 +90,4 @@ uv run python src/evaluation/flop_counter.py \
 
 echo ""
 c_echo $GREEN "✓ FLOP measurement complete!"
+c_echo $YELLOW "Log saved to: $LOG_FILE"

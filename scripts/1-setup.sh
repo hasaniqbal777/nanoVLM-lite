@@ -9,6 +9,14 @@ source "$SCRIPT_DIR/common.sh"
 
 set -e
 
+# Setup logging
+LOG_DIR="$PROJECT_ROOT/logs"
+ensure_dir "$LOG_DIR"
+LOG_FILE="$LOG_DIR/setup_$(date +%Y%m%d_%H%M%S).log"
+
+# Function to log both to console and file
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 c_echo $GREEN "============================================================"
 c_echo $GREEN "nanoVLM Setup"
 c_echo $GREEN "============================================================"
@@ -71,3 +79,5 @@ echo ""
 c_echo $GREEN "============================================================"
 c_echo $GREEN "Setup complete!"
 c_echo $GREEN "============================================================"
+echo ""
+c_echo $YELLOW "Log saved to: $LOG_FILE"
