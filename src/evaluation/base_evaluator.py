@@ -476,12 +476,31 @@ class BaseEvaluator(ABC):
                 results["generation_tflops"] = gen_flops['generation_total_tflops']
                 results["generation_gflops"] = gen_flops['generation_total_gflops']
                 results["generation_flops_per_token"] = gen_flops['generation_flops_per_token']
+                results["prefill_tokens"] = gen_flops['S_prefill_tokens']
                 print(
                     f"Generation (3 tokens): {gen_flops['generation_total_tflops']:.4f} TFLOPs")
+                print(
+                    f"Prefill tokens: {gen_flops['S_prefill_tokens']}")
 
-            # Use vision encoder TFLOPs as the main estimate
-            results["estimated_tflops_per_forward"] = results.get(
-                "vit_manual_tflops", 0)
+            # Calculate total FLOPs: vision + modality projection + generation
+            vit_flops = results.get("vit_manual_tflops", 0)
+            gen_flops_val = results.get("generation_tflops", 0)
+            total_flops = vit_flops + gen_flops_val
+            
+            results["estimated_tflops_per_forward"] = total_flops
+            results["vision_tflops"] = vit_flops
+            results["language_tflops"] = gen_flops_val
+            
+            # Add visual token count info
+            results["visual_tokens"] = self.model.cfg.mp_image_token_length
+            
+            print(f"\n{'='*60}")
+            print(f"Total FLOPs breakdown:")
+            print(f"  Vision encoder: {vit_flops:.4f} TFLOPs")
+            print(f"  Generation: {gen_flops_val:.4f} TFLOPs")
+            print(f"  Total: {total_flops:.4f} TFLOPs")
+            print(f"  Visual tokens: {self.model.cfg.mp_image_token_length}")
+            print(f"{'='*60}")
 
         except Exception as e:
             print(f"\nWarning: Detailed FLOP profiling failed ({e})")

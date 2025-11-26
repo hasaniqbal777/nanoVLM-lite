@@ -137,71 +137,41 @@ uv run python src/evaluation/flop_counter.py \
 - **Implementation**: Automatic positional embedding interpolation
 - **Use**: `./scripts/2-evaluate.sh --resolution 384`
 
-### 2. Token Pooling/Dropping ✅
+### 2. Token Pooling ✅
 - **Status**: Implemented
-- **Method**: Reduce number of image tokens processed by language model
+- **Method**: Apply token pooling to pretrained model WITHOUT retraining
+- **Approach**: Replace modality projector with pooling-enabled version
 - **Strategies**:
-  - **Average Pooling**: Spatial mean aggregation (2×2 → 1, 4× reduction)
-  - **Max Pooling**: Maximum activation per patch (2×2 → 1, 4× reduction)
-  - **Adaptive Pooling**: Learned weighted combination with channel attention (~296K params)
-  - **Norm-based Dropping**: Drop lowest L2 norm tokens (configurable keep ratio)
-- **FLOP Reduction**: Linear with token reduction (25% tokens ≈ 52.5% total FLOPs)
-- **Implementation**: Modular `TokenPooling` and `NormBasedTokenDropping` classes
+  - **Average Pooling**: Spatial mean aggregation (kernel/stride configurable)
+  - **Max Pooling**: Maximum activation per patch (kernel/stride configurable)
+  - **Adaptive Pooling**: Target grid size (e.g., 8×8 = 64 tokens)
+- **FLOP Reduction**: Linear with token reduction (64→16 tokens ≈ 75% LM FLOPs)
+- **Implementation**: `TokenPooledEvaluator(BaseEvaluator)` with post-hoc pooling
 - **Evaluation**:
   ```bash
-  # Evaluate with 2×2 average pooling (4× token reduction)
-  ./scripts/5-token-pooling.sh --pool-method pool_avg --pool-factor 2
+  # Baseline (no pooling)
+  ./scripts/5-token-pooling.sh --pooling none
   
-  # Evaluate with 4×4 max pooling (16× token reduction)
-  ./scripts/5-token-pooling.sh --pool-method pool_max --pool-factor 4
+  # Average pooling with 2×2 kernel, stride 2
+  ./scripts/5-token-pooling.sh --pooling avg --kernel 2 --stride 2
   
-  # Evaluate with adaptive pooling (learnable weights)
-  ./scripts/5-token-pooling.sh --pool-method pool_adaptive --pool-factor 2
+  # Max pooling with 4×4 kernel, stride 4  
+  ./scripts/5-token-pooling.sh --pooling max --kernel 4 --stride 4
   
-  # Evaluate with norm-based dropping (keep 50% tokens)
-  ./scripts/5-token-pooling.sh --pool-method drop_norm --keep-ratio 0.5
-  
-  # Baseline (no token reduction)
-  ./scripts/5-token-pooling.sh --pool-method none
+  # Adaptive pooling to 8×8 grid (64 tokens)
+  ./scripts/5-token-pooling.sh --pooling adaptive --grid 8
   
   # With more samples
-  ./scripts/5-token-pooling.sh --max-samples 500 --pool-factor 2
-  ```
-- **Test & Demo**:
-  ```bash
-  # Run comprehensive test suite
-  uv run python src/optimization/test_token_pooling.py
+  ./scripts/5-token-pooling.sh --max-samples 500 --pooling avg
   
-  # Example: 4× token reduction (1024 → 256 tokens)
-  # Average pooling: 2×2 spatial pooling
-  # Max pooling: 2×2 max aggregation  
-  # Adaptive pooling: 2×2 learned weights
-  # Norm dropping: Keep 25% highest norm tokens
-  ```
-- **Integration**: Use `VLMWithTokenPooling` wrapper for nanoVLM:
-  ```python
-  from optimization.vlm_with_pooling import VLMWithTokenPooling
-  
-  # Load model with 4× token reduction (average pooling)
-  model = VLMWithTokenPooling.from_pretrained(
-      "lusxvr/nanoVLM",
-      pool_method='pool_avg',
-      pool_factor=2  # 2×2 pooling
-  )
-  
-  # Or use norm-based dropping (keep 50%)
-  model = VLMWithTokenPooling.from_pretrained(
-      "lusxvr/nanoVLM",
-      pool_method='drop_norm',
-      keep_ratio=0.5
-  )
+  # Or use Python directly
+  uv run python src/evaluation/evaluate_token_pooling.py \
+      --pooling avg --kernel 2 --stride 2 --max-samples 100
   ```
 
 ### 3. Other Strategies (Future)
 - Quantization (INT8, INT4)
-- Pruning (structured/unstructured)
 - Knowledge distillation
-- Layer reduction
 
 ## Next Steps
 

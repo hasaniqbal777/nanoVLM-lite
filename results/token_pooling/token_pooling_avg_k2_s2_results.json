@@ -1,0 +1,32 @@
+{
+  "total_params": 460113984,
+  "trainable_params": 460113984,
+  "vit_manual_tflops": 2.565706088448,
+  "vit_manual_gflops": 2565.706088448,
+  "vit_auto_tflops": 2.27700375552,
+  "vit_auto_gflops": 2277.00375552,
+  "generation_tflops": 2.44233856512,
+  "generation_gflops": 2442.33856512,
+  "generation_flops_per_token": 814112855040.0,
+  "prefill_tokens": 240,
+  "estimated_tflops_per_forward": 5.008044653568,
+  "vision_tflops": 2.565706088448,
+  "language_tflops": 2.44233856512,
+  "visual_tokens": 16,
+  "mcq_accuracy": 0.5103448275862069,
+  "mcq_correct": 74,
+  "mcq_total": 145,
+  "mcq_avg_latency": 0.8011456177152436,
+  "model_path": "lusxvr/nanoVLM",
+  "split": "validation",
+  "mode": "mcq",
+  "resolution": 512,
+  "pooling_config": {
+    "type": "avg",
+    "kernel": 2,
+    "stride": 2,
+    "grid": null,
+    "original_tokens": 64,
+    "final_tokens": 16
+  }
+}
