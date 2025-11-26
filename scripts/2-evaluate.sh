@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Baseline Evaluation Script
-# Runs baseline evaluation with enhanced prompts on nanoVLM with A-OKVQA
+# Model Evaluation Script
+# Runs evaluation with enhanced prompts on nanoVLM with A-OKVQA
 
 # Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,7 +19,7 @@ show_usage() {
     echo "  --mode MODE          Evaluation mode: mcq, oa, both (default: both)"
     echo "  --split SPLIT        Dataset split: train, validation, test (default: validation)"
     echo "  --resolution RES     Target resolution: 384, 256, 192 (default: model default 512)"
-    echo "  --output FILE        Output JSON file (default: results/baseline_results_res{RES}.json)"
+    echo "  --output FILE        Output JSON file (default: results/results_res{RES}.json)"
     echo "  -h, --help           Show this help message"
     echo ""
     echo "Examples:"
@@ -39,7 +39,7 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
 fi
 
 c_echo $GREEN "============================================================"
-c_echo $GREEN "nanoVLM Baseline Evaluation"
+c_echo $GREEN "nanoVLM Model Evaluation"
 c_echo $GREEN "============================================================"
 
 # Check if nanoVLM is set up
@@ -103,9 +103,9 @@ done
 # Set default output with resolution in filename if not overridden
 if [ "$OUTPUT_OVERRIDE" = false ]; then
     if [ -n "$RESOLUTION" ]; then
-        OUTPUT="$RESULTS_DIR/baseline_results_res${RESOLUTION}.json"
+        OUTPUT="$RESULTS_DIR/results_res${RESOLUTION}.json"
     else
-        OUTPUT="$RESULTS_DIR/baseline_results_res512.json"
+        OUTPUT="$RESULTS_DIR/results_res512.json"
     fi
 fi
 
@@ -133,11 +133,11 @@ echo "  Output: $OUTPUT"
 echo ""
 
 # Run evaluation
-c_echo $YELLOW "Running baseline evaluation..."
+c_echo $YELLOW "Running model evaluation..."
 echo ""
 
 # Build command with optional resolution
-EVAL_CMD="uv run python src/evaluation/baseline.py \
+EVAL_CMD="uv run python src/evaluation/evaluate.py \
     --model-path '$MODEL' \
     --max-samples $MAX_SAMPLES \
     --mode $MODE \
@@ -151,6 +151,6 @@ fi
 eval $EVAL_CMD
 
 echo ""
-c_echo $GREEN "✓ Baseline evaluation complete!"
+c_echo $GREEN "✓ Model evaluation complete!"
 c_echo $YELLOW "Results saved to: $OUTPUT"
 c_echo $YELLOW "Log saved to: $LOG_FILE"

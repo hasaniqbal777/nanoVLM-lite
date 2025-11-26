@@ -16,44 +16,44 @@ This clones the nanoVLM model code from https://github.com/huggingface/nanoVLM t
 uv sync
 ```
 
-## Baseline Evaluation
+## Model Evaluation
 
-Run baseline evaluation to measure accuracy and performance:
+Run model evaluation to measure accuracy and performance:
 
 ```bash
 # Default: 100 samples, both modes, 512 resolution
-./scripts/2-baseline.sh
+./scripts/2-evaluate.sh
 
 # With specific sample count
-./scripts/2-baseline.sh --max-samples 50
+./scripts/2-evaluate.sh --max-samples 50
 
 # MCQ only evaluation
-./scripts/2-baseline.sh --max-samples 100 --mode mcq
+./scripts/2-evaluate.sh --max-samples 100 --mode mcq
 
 # Open-answer only evaluation
-./scripts/2-baseline.sh --max-samples 100 --mode oa
+./scripts/2-evaluate.sh --max-samples 100 --mode oa
 
 # With resolution reduction (384x384)
-./scripts/2-baseline.sh --resolution 384
+./scripts/2-evaluate.sh --resolution 384
 
 # Combined: 100 samples, 256 resolution
-./scripts/2-baseline.sh --max-samples 100 --resolution 256
+./scripts/2-evaluate.sh --max-samples 100 --resolution 256
 
 # With custom output file
-./scripts/2-baseline.sh --max-samples 10 --output results/custom.json
+./scripts/2-evaluate.sh --max-samples 10 --output results/custom.json
 
 # With test split
-./scripts/2-baseline.sh --split test
+./scripts/2-evaluate.sh --split test
 
 # Or use Python directly
-uv run python src/evaluation/baseline.py \
+uv run python src/evaluation/evaluate.py \
     --max-samples 100 \
     --mode both \
     --resolution 384 \
-    --output results/baseline_results_res384.json
+    --output results/results_res384.json
 ```
 
-**Output**: Results saved to `results/baseline_results_res{RESOLUTION}.json` (includes checkpoint for FLOP measurement)
+**Output**: Results saved to `results/results_res{RESOLUTION}.json` (includes checkpoint for FLOP measurement)
 
 **Results** (100 samples, 512×512 resolution):
 - Model: `lusxvr/nanoVLM` (460M parameters)
@@ -75,9 +75,9 @@ Measure FLOPs for vision encoder and generation:
 # With custom output path
 ./scripts/3-flop-counter.sh test/test_image.webp test/test_query.txt results/my_flops.json
 
-# Using checkpoint from baseline evaluation
+# Using checkpoint from evaluation
 uv run python src/evaluation/flop_counter.py \
-    --checkpoint checkpoints/baseline_res384_for_flops.pt \
+    --checkpoint checkpoints/res384_for_flops.pt \
     --image test/test_image.webp \
     --question "What is the name of the dog's toy?" \
     --output results/flops_res384.json
@@ -96,13 +96,13 @@ uv run python src/evaluation/flop_counter.py \
 ├── scripts/
 │   ├── common.sh                # Shared shell functions
 │   ├── 1-setup.sh               # Clone nanoVLM repository
-│   ├── 2-baseline.sh            # Run baseline evaluation
+│   ├── 2-evaluate.sh            # Run model evaluation
 │   ├── 3-flop-counter.sh        # Measure FLOPs
-│   └── 4-evaluate.sh            # Complete evaluation pipeline
+│   └── 4-finetune-mcq.sh        # Fine-tune on MCQ task
 ├── src/
 │   ├── evaluation/
 │   │   ├── base_evaluator.py   # Base evaluator with FLOP profiling
-│   │   ├── baseline.py          # Baseline evaluation script
+│   │   ├── evaluate.py          # Model evaluation script
 │   │   └── flop_counter.py      # FLOP measurement script
 │   └── optimization/
 │       └── resolution_reduction.py  # Resolution reduction strategy
@@ -129,7 +129,7 @@ uv run python src/evaluation/flop_counter.py \
 - **Method**: Reduce input image resolution (512→384→256→192)
 - **FLOP Reduction**: Quadratic with resolution (e.g., 384→512 = 44%)
 - **Implementation**: Automatic positional embedding interpolation
-- **Use**: `./scripts/2-baseline.sh --resolution 384`
+- **Use**: `./scripts/2-evaluate.sh --resolution 384`
 
 ### 2. Token Pooling/Dropping ✅
 - **Status**: Implemented

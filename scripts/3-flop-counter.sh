@@ -24,7 +24,7 @@ show_usage() {
     echo "Arguments:"
     echo "  IMAGE      Path to test image (default: test/test_image.webp)"
     echo "  QUERY_FILE Path to query file (default: test/test_query.txt)"
-    echo "  OUTPUT     Path to save JSON results (default: results/baseline_flops.json)"
+    echo "  OUTPUT     Path to save JSON results (default: results/flops.json)"
     echo ""
     echo "Examples:"
     echo "  $0"
@@ -55,7 +55,7 @@ export PYTHONPATH="$NANOVLM_DIR:$PROJECT_ROOT:$PYTHONPATH"
 # Parse arguments
 IMAGE="${1:-test/test_image.webp}"
 QUERY_FILE="${2:-test/test_query.txt}"
-OUTPUT="${3:-results/baseline_flops.json}"
+OUTPUT="${3:-results/flops.json}"
 
 # Read question from file
 if [ ! -f "$QUERY_FILE" ]; then

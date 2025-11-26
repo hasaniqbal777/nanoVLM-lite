@@ -73,7 +73,7 @@ echo "  export PYTHONPATH=\"$NANOVLM_DIR:\$PYTHONPATH\""
 echo ""
 c_echo $YELLOW "Or run:"
 echo "  export PYTHONPATH=\"$NANOVLM_DIR:\$PYTHONPATH\""
-echo "  uv run python src/evaluation/baseline.py"
+echo "  uv run python src/evaluation/evaluate.py"
 
 echo ""
 c_echo $GREEN "============================================================"
