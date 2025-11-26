@@ -1,4 +1,6 @@
-# nanoVLM Optimization for A-OKVQA
+# nanoVLM-Lite
+
+**Reducing inference FLOPs for a lightweight, efficient vision-language model**
 
 **Goal**: Reduce inference TFLOPs as much as possible while maintaining ≥65% MCQ accuracy on A-OKVQA.
 
@@ -98,14 +100,18 @@ uv run python src/evaluation/flop_counter.py \
 │   ├── 1-setup.sh               # Clone nanoVLM repository
 │   ├── 2-evaluate.sh            # Run model evaluation
 │   ├── 3-flop-counter.sh        # Measure FLOPs
-│   └── 4-finetune-mcq.sh        # Fine-tune on MCQ task
+│   ├── 4-finetune-mcq.sh        # Fine-tune on MCQ task
+│   └── 5-token-pooling.sh       # Evaluate token pooling/dropping
 ├── src/
 │   ├── evaluation/
-│   │   ├── base_evaluator.py   # Base evaluator with FLOP profiling
-│   │   ├── evaluate.py          # Model evaluation script
-│   │   └── flop_counter.py      # FLOP measurement script
+│   │   ├── base_evaluator.py           # Base evaluator with FLOP profiling
+│   │   ├── evaluate.py                 # Model evaluation script
+│   │   ├── evaluate_token_pooling.py   # Token pooling evaluation
+│   │   └── flop_counter.py             # FLOP measurement script
 │   └── optimization/
-│       └── resolution_reduction.py  # Resolution reduction strategy
+│       ├── token_pooling.py            # Token pooling/dropping modules
+│       ├── vlm_with_pooling.py         # VLM with token pooling integration
+│       └── test_token_pooling.py       # Token pooling test suite
 ├── models/
 │   └── nanoVLM/                 # Cloned nanoVLM repository
 ├── test/
@@ -135,17 +141,60 @@ uv run python src/evaluation/flop_counter.py \
 - **Status**: Implemented
 - **Method**: Reduce number of image tokens processed by language model
 - **Strategies**:
-  - **Average Pooling**: Combine adjacent tokens (2x2 → 1, 4x reduction)
-  - **Max Pooling**: Take maximum activation from patch
-  - **Token Dropping**: Drop least informative tokens based on L2 norm
-- **FLOP Reduction**: Linear with token reduction (50% tokens = ~50% LM FLOPs)
-- **Use**: 
+  - **Average Pooling**: Spatial mean aggregation (2×2 → 1, 4× reduction)
+  - **Max Pooling**: Maximum activation per patch (2×2 → 1, 4× reduction)
+  - **Adaptive Pooling**: Learned weighted combination with channel attention (~296K params)
+  - **Norm-based Dropping**: Drop lowest L2 norm tokens (configurable keep ratio)
+- **FLOP Reduction**: Linear with token reduction (25% tokens ≈ 52.5% total FLOPs)
+- **Implementation**: Modular `TokenPooling` and `NormBasedTokenDropping` classes
+- **Evaluation**:
   ```bash
-  # 2x2 pooling (4x token reduction)
-  python src/optimization/token_pooling.py --pool-factor 2 --pool-method avg
+  # Evaluate with 2×2 average pooling (4× token reduction)
+  ./scripts/5-token-pooling.sh --pool-method pool_avg --pool-factor 2
   
-  # Keep 50% of tokens (drop 50%)
-  python src/optimization/token_pooling.py --keep-ratio 0.5 --drop-method norm
+  # Evaluate with 4×4 max pooling (16× token reduction)
+  ./scripts/5-token-pooling.sh --pool-method pool_max --pool-factor 4
+  
+  # Evaluate with adaptive pooling (learnable weights)
+  ./scripts/5-token-pooling.sh --pool-method pool_adaptive --pool-factor 2
+  
+  # Evaluate with norm-based dropping (keep 50% tokens)
+  ./scripts/5-token-pooling.sh --pool-method drop_norm --keep-ratio 0.5
+  
+  # Baseline (no token reduction)
+  ./scripts/5-token-pooling.sh --pool-method none
+  
+  # With more samples
+  ./scripts/5-token-pooling.sh --max-samples 500 --pool-factor 2
+  ```
+- **Test & Demo**:
+  ```bash
+  # Run comprehensive test suite
+  uv run python src/optimization/test_token_pooling.py
+  
+  # Example: 4× token reduction (1024 → 256 tokens)
+  # Average pooling: 2×2 spatial pooling
+  # Max pooling: 2×2 max aggregation  
+  # Adaptive pooling: 2×2 learned weights
+  # Norm dropping: Keep 25% highest norm tokens
+  ```
+- **Integration**: Use `VLMWithTokenPooling` wrapper for nanoVLM:
+  ```python
+  from optimization.vlm_with_pooling import VLMWithTokenPooling
+  
+  # Load model with 4× token reduction (average pooling)
+  model = VLMWithTokenPooling.from_pretrained(
+      "lusxvr/nanoVLM",
+      pool_method='pool_avg',
+      pool_factor=2  # 2×2 pooling
+  )
+  
+  # Or use norm-based dropping (keep 50%)
+  model = VLMWithTokenPooling.from_pretrained(
+      "lusxvr/nanoVLM",
+      pool_method='drop_norm',
+      keep_ratio=0.5
+  )
   ```
 
 ### 3. Other Strategies (Future)

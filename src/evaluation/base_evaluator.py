@@ -62,23 +62,31 @@ class BaseEvaluator(ABC):
             original_resolution = self.model.cfg.vit_img_size
             if resolution != original_resolution:
                 print(
-                    f"Updating model resolution from {original_resolution} to {resolution}")
+                    f"Updating split size from {original_resolution}×{original_resolution} to {resolution}×{resolution}")
+
+                # Update the size of each image split/crop (not the max image size)
                 self.model.cfg.vit_img_size = resolution
-                self.model.cfg.max_img_size = resolution
-                self.model.cfg.resize_to_max_side_len = False
+                # Keep max_img_size at 2048 for dynamic resize (Global-and-Split strategy)
+                # This ensures images are still resized to max 2048px before splitting
+                # Note: resize_to_max_side_len should remain True (default in config)
 
                 # Interpolate positional embeddings to match new resolution
                 self._interpolate_positional_embeddings(
                     original_resolution, resolution)
 
                 # Update image token count for new resolution
+                # Each split produces: (resolution/patch_size)^2 patches
+                # After 4×4 pixel-shuffle compression: patches / 16 tokens per split
                 patch_size = self.model.cfg.vit_patch_size
                 num_patches = (resolution // patch_size) ** 2
                 scale_factor = self.model.cfg.mp_pixel_shuffle_factor
                 new_token_count = num_patches // (scale_factor ** 2)
                 self.model.cfg.mp_image_token_length = new_token_count
 
-                print(f"Image token count updated to {new_token_count}")
+                print(
+                    f"Each {resolution}×{resolution} split now produces {new_token_count} visual tokens")
+                print(
+                    f"(from {num_patches} patches with {scale_factor}×{scale_factor} compression)")
 
         # Get processors
         self.tokenizer = get_tokenizer(

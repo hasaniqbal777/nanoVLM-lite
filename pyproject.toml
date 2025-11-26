@@ -1,7 +1,7 @@
 [project]
-name = "nanovlm-optimization"
+name = "nanovlm-lite"
 version = "0.1.0"
-description = "Reduce nanoVLM inference TFLOPs while maintaining accuracy on A-OKVQA"
+description = "A lightweight, optimized version of nanoVLM for efficient visual question answering"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

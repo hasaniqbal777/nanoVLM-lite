@@ -773,7 +773,7 @@ wheels = [
 ]
 
 [[package]]
-name = "nanovlm-optimization"
+name = "nanovlm-lite"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -1,0 +1,20 @@
+{
+  "total_params": 460113984,
+  "trainable_params": 460113984,
+  "vit_manual_tflops": 2.565706088448,
+  "vit_manual_gflops": 2565.706088448,
+  "vit_auto_tflops": 2.27700375552,
+  "vit_auto_gflops": 2277.00375552,
+  "generation_tflops": 2.9345289984,
+  "generation_gflops": 2934.5289984,
+  "generation_flops_per_token": 978176332800.0,
+  "estimated_tflops_per_forward": 2.565706088448,
+  "mcq_accuracy": 0.7467248908296943,
+  "mcq_correct": 855,
+  "mcq_total": 1145,
+  "mcq_avg_latency": 0.9707341115027015,
+  "model_path": "./checkpoints/aokvqa_finetuned/",
+  "split": "validation",
+  "mode": "mcq",
+  "resolution": 512
+}
